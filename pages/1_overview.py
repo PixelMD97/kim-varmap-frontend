@@ -2,7 +2,7 @@ import streamlit as st
 
 from ui_stepper import render_stepper
 from auth_ui import render_auth_status
-from api_client import create_project
+from api_client import create_project, list_projects, get_project
 
 
 # -------------------------------------------------
@@ -29,12 +29,75 @@ st.caption(
     "with the corresponding EPIC/PDMS mapping."
 )
 
+st.markdown("### Project")
+
+
+# -------------------------------------------------
+# Project mode selection
+# -------------------------------------------------
+project_mode = st.radio(
+    "Project mode",
+    options=["Create new project", "Use existing project"],
+    horizontal=True,
+)
+
+st.session_state["project_mode"] = project_mode
+
+
+# -------------------------------------------------
+# Helpers
+# -------------------------------------------------
+def _parse_emails(raw: str) -> list[str]:
+    return [e.strip() for e in raw.split(",") if e.strip()]
+
+
+# -------------------------------------------------
+# EXISTING PROJECT PATH
+# -------------------------------------------------
+if project_mode == "Use existing project":
+    try:
+        projects = list_projects()
+    except Exception as e:
+        st.error(f"Failed to load projects: {e}")
+        st.stop()
+
+    if not projects:
+        st.info("You do not have access to any existing projects yet.")
+        st.stop()
+
+    project_lookup = {
+        f"{p['display_name']} ({p['name']})": p["name"]
+        for p in projects
+    }
+
+    selected_label = st.selectbox(
+        "Select a project",
+        options=list(project_lookup.keys()),
+    )
+
+    selected_project = project_lookup[selected_label]
+
+    st.markdown("---")
+
+    if st.button("Continue →", use_container_width=True):
+        try:
+            project = get_project(selected_project)
+            st.session_state["project"] = project["name"]
+
+            st.success(f"Project '{project['display_name']}' loaded.")
+            st.switch_page("pages/2_data_source.py")
+
+        except Exception as e:
+            st.error(f"Failed to load project: {e}")
+
+    st.stop()
+
+
+# -------------------------------------------------
+# NEW PROJECT PATH (your original logic)
+# -------------------------------------------------
 st.markdown("### Project information")
 
-
-# -------------------------------------------------
-# Input fields
-# -------------------------------------------------
 left, right = st.columns([6, 1])
 
 with left:
@@ -73,16 +136,6 @@ with right:
         )
 
 
-# -------------------------------------------------
-# Helpers
-# -------------------------------------------------
-def _parse_emails(raw: str) -> list[str]:
-    return [e.strip() for e in raw.split(",") if e.strip()]
-
-
-# -------------------------------------------------
-# Persist local UX state (unchanged)
-# -------------------------------------------------
 if project_name_input.strip():
     st.session_state["project_meta"] = {
         "project_name": project_name_input.strip(),
@@ -92,7 +145,7 @@ if project_name_input.strip():
 
 
 # -------------------------------------------------
-# Informational text
+# Informational text (unchanged)
 # -------------------------------------------------
 st.markdown("### How it works")
 st.markdown(
@@ -105,31 +158,11 @@ st.markdown(
 """
 )
 
-st.markdown("### What you get")
-st.markdown(
-    "- A clean CSV export of selected variables (with identifiers and metadata), "
-    "named using your project and the export date."
-)
-
-st.markdown("---")
-
-st.markdown(
-    """
-### Data usage & responsibilities
-
-- Retrospective data analysis in a **datenschutzkonforme** manner
-  and in compliance with applicable institutional and legal requirements.
-- If you receive an IDS-C dataset based on this mapping, we ask you to
-  help improve mappings and **return the final dataset or derived variable list**.
-- All data processing complies with institutional DLF and data protection policies.
-"""
-)
-
 st.markdown("---")
 
 
 # -------------------------------------------------
-# START → backend project creation
+# START → create new project
 # -------------------------------------------------
 if st.button("Start →", use_container_width=True):
     meta = st.session_state.get("project_meta")
@@ -145,10 +178,9 @@ if st.button("Start →", use_container_width=True):
             collaborators=meta.get("collaborators", []),
         )
 
-        # 🔐 canonical backend project anchor
         st.session_state["project"] = project["name"]
 
-        st.success(f"Project '{project['display_name']}' ready.")
+        st.success(f"Project '{project['display_name']}' created.")
         st.switch_page("pages/2_data_source.py")
 
     except Exception as e:
