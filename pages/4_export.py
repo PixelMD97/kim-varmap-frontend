@@ -264,4 +264,4 @@ if submitted:
 
 
 st.markdown("---")
-render_bottom_nav(current_step=5)
+render_stepper(current_step=4)
