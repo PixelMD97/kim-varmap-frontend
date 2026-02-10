@@ -5,6 +5,10 @@ from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from tree_utils import build_nodes_and_lookup
 from data_store import get_master_df
+from project_guard import require_project
+
+
+require_project()
 
 
 # -------------------------------------------------
