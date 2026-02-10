@@ -46,3 +46,11 @@ def delete_mapping(project, mapping_id):
         f"{BASE_URL}/projects/{project}/mappings/{mapping_id}"
     )
     r.raise_for_status()
+
+def update_project_settings(project: str, settings: dict):
+    r = requests.patch(
+        f"{BASE_URL}/projects/{project}/config",
+        json={"settings": settings},
+    )
+    r.raise_for_status()
+    return r.json()
