@@ -20,10 +20,11 @@ def create_project(name, display_name, collaborators):
     return r.json()
 
 
-def list_mappings(project):
-    r = requests.get(f"{BASE_URL}/projects/{project}/mappings")
+def list_projects():
+    r = requests.get(f"{BASE_URL}/projects")
     r.raise_for_status()
     return r.json()
+
 
 
 def create_mapping(project, payload):
