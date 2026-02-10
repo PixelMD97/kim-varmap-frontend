@@ -5,6 +5,10 @@ import streamlit as st
 from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from data_store import get_master_df
+from project_guard import require_project
+
+
+require_project()
 
 
 # -------------------------------------------------
