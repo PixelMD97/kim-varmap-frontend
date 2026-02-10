@@ -26,6 +26,12 @@ def list_projects():
     return r.json()
 
 
+def get_project(name: str):
+    r = requests.get(f"{BASE_URL}/projects/{name}")
+    r.raise_for_status()
+    return r.json()
+
+
 
 def create_mapping(project, payload):
     r = requests.post(
