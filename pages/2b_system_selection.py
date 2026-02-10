@@ -3,6 +3,10 @@ import streamlit as st
 from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from api_client import update_project_settings
+from project_guard import require_project
+
+
+require_project()
 
 
 # -------------------------------------------------
