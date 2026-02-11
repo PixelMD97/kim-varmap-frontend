@@ -3,136 +3,100 @@ import requests
 import streamlit as st
 
 
-# -------------------------------------------------
-# Configuration
-# -------------------------------------------------
-BASE_URL = os.getenv(
-    "KIM_API_BASE_URL",
-    "http://localhost:8000"
-).rstrip("/")
-
-TIMEOUT_SECONDS = 15
-
-
-# -------------------------------------------------
-# Internal helpers
-# -------------------------------------------------
-class ApiError(RuntimeError):
-    pass
-
-
-def _get_token():
-    return st.session_state.get("access_token")
+def _base_url():
+    return os.getenv(
+        "KIM_API_BASE_URL",
+        "https://2025varmapbackend-adgyb5eqghc6bzay.westeurope-01.azurewebsites.net"
+    ).rstrip("/")
 
 
 def _headers():
-    headers = {
+    token = st.session_state.get("access_token")
+    if not token:
+        raise RuntimeError("Not authenticated")
+
+    return {
+        "Authorization": f"Bearer {token}",
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
 
-    token = _get_token()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
 
-    return headers
-
-
-def _handle_response(response: requests.Response):
-    if response.status_code >= 400:
-        try:
-            detail = response.json()
-        except Exception:
-            detail = response.text
-        raise ApiError(f"{response.status_code}: {detail}")
-
-    if not response.content:
-        return None
-
-    return response.json()
+def _get(path):
+    r = requests.get(f"{_base_url()}{path}", headers=_headers())
+    r.raise_for_status()
+    return r.json() if r.content else None
 
 
-def _get(path: str):
-    r = requests.get(
-        f"{BASE_URL}{path}",
-        headers=_headers(),
-        timeout=TIMEOUT_SECONDS,
-    )
-    return _handle_response(r)
+def _post(path, payload):
+    r = requests.post(f"{_base_url()}{path}", json=payload, headers=_headers())
+    r.raise_for_status()
+    return r.json() if r.content else None
 
 
-def _post(path: str, payload: dict):
-    r = requests.post(
-        f"{BASE_URL}{path}",
-        json=payload,
-        headers=_headers(),
-        timeout=TIMEOUT_SECONDS,
-    )
-    return _handle_response(r)
+def _patch(path, payload):
+    r = requests.patch(f"{_base_url()}{path}", json=payload, headers=_headers())
+    r.raise_for_status()
+    return r.json() if r.content else None
 
 
-def _patch(path: str, payload: dict):
-    r = requests.patch(
-        f"{BASE_URL}{path}",
-        json=payload,
-        headers=_headers(),
-        timeout=TIMEOUT_SECONDS,
-    )
-    return _handle_response(r)
+def _delete(path):
+    r = requests.delete(f"{_base_url()}{path}", headers=_headers())
+    r.raise_for_status()
 
 
-def _delete(path: str):
-    r = requests.delete(
-        f"{BASE_URL}{path}",
-        headers=_headers(),
-        timeout=TIMEOUT_SECONDS,
-    )
-    return _handle_response(r)
+def _put(path, payload):
+    r = requests.put(f"{_base_url()}{path}", json=payload, headers=_headers())
+    r.raise_for_status()
+    return r.json() if r.content else None
 
 
-# -------------------------------------------------
-# Project APIs
-# -------------------------------------------------
-def create_project(name: str, display_name: str, collaborators: list[str]):
+
+
+
+def list_projects():
+    return _get("/projects")
+
+
+def create_project(name, display_name, collaborators):
     payload = {
         "name": name,
         "display_name": display_name,
         "allowed_users": collaborators,
     }
-
-    try:
-        return _post("/projects", payload)
-    except ApiError as e:
-        if "already exists" in str(e):
-            return get_project(name)
-        raise
+    return _post("/projects", payload)
 
 
-def list_projects():
-    return _get("/projects") or []
-
-
-def get_project(name: str):
+def get_project(name):
     return _get(f"/projects/{name}")
 
 
-def update_project_settings(project: str, settings: dict):
-    return _patch(
-        f"/projects/{project}/config",
-        {"settings": settings},
-    )
+def update_mapping(project, mapping_id, payload):
+    return _put(f"/projects/{project}/mappings/{mapping_id}", payload)
 
 
-# -------------------------------------------------
-# Mapping APIs
-# -------------------------------------------------
-def fetch_base_mapping(project: str):
-    return _get(f"/projects/{project}/mappings") or []
+def list_mappings(project):
+    return _get(f"/projects/{project}/mappings")
 
 
-def create_mapping(project: str, payload: dict):
+def create_mapping(project, payload):
     return _post(f"/projects/{project}/mappings", payload)
 
 
-def delete_mapping(project: str, mapping_id: str):
+def update_mapping(project, mapping_id, payload):
+    return _post(f"/projects/{project}/mappings/{mapping_id}", payload)
+
+
+def delete_mapping(project, mapping_id):
     _delete(f"/projects/{project}/mappings/{mapping_id}")
+
+
+def propose_mappings(project, mapping_ids):
+    return _post(
+        f"/projects/{project}/propose-mappings",
+        {"mapping_ids": mapping_ids},
+    )
+
+def save_all_mappings(project, mappings):
+    return _put(f"/projects/{project}/mappings/batch", mappings)
+
