@@ -3,10 +3,6 @@ import streamlit as st
 
 from api_client import fetch_base_mapping
 
-
-# -----------------------------------------
-# Core columns expected by frontend
-# -----------------------------------------
 EXPECTED_COLUMNS = [
     "Organ System",
     "Group",
@@ -17,19 +13,19 @@ EXPECTED_COLUMNS = [
 ]
 
 
-# -----------------------------------------
-# Convert backend mapping JSON -> DataFrame
-# -----------------------------------------
-def backend_mappings_to_df(mappings: list[dict]) -> pd.DataFrame:
-    """
-    Convert backend JSON schema to frontend tabular structure.
-    """
+@st.cache_data(show_spinner=False)
+def load_project_mappings(project: str) -> list[dict]:
+    return fetch_base_mapping(project) or []
 
+
+def backend_mappings_to_df(mappings: list[dict]) -> pd.DataFrame:
     rows = []
+    mapping_lookup = {}
 
     for m in mappings:
-        classification = m.get("classification", {})
-        path = classification.get("path", [])
+        mapping_id = m.get("id")
+        classification = m.get("classification") or {}
+        path = classification.get("path") or []
 
         organ_system = path[0] if len(path) > 0 else "General"
         group = path[1] if len(path) > 1 else "General"
@@ -37,9 +33,9 @@ def backend_mappings_to_df(mappings: list[dict]) -> pd.DataFrame:
         epic_id = ""
         pdms_id = ""
 
-        for src in m.get("source", []):
-            system = src.get("system", "").upper()
-            variable = src.get("variable", "")
+        for src in m.get("source") or []:
+            system = (src.get("system") or "").upper()
+            variable = src.get("variable") or ""
 
             if system == "EPIC":
                 epic_id = variable
@@ -53,43 +49,34 @@ def backend_mappings_to_df(mappings: list[dict]) -> pd.DataFrame:
             "EPIC ID": epic_id,
             "PDMS ID": pdms_id,
             "Unit": m.get("unit", ""),
-            "__row_key__": m.get("id"),
+            "__row_key__": mapping_id,
         })
+
+        mapping_lookup[mapping_id] = m
 
     df = pd.DataFrame(rows)
 
-    # ensure structure
     for col in EXPECTED_COLUMNS:
         if col not in df.columns:
             df[col] = ""
 
+    st.session_state["mapping_lookup"] = mapping_lookup
+
     return df
 
 
-# -----------------------------------------
-# Main entry point for UI
-# -----------------------------------------
 def get_master_df() -> pd.DataFrame:
-    """
-    Single source of truth.
-
-    Loads mappings from backend and converts to frontend format.
-    """
-
     project = st.session_state.get("project")
     if not project:
         return pd.DataFrame(columns=EXPECTED_COLUMNS)
 
-    mappings = fetch_base_mapping(project)
+    mappings = load_project_mappings(project)
 
-    if mappings is None or len(mappings) == 0:
+    if not mappings:
         return pd.DataFrame(columns=EXPECTED_COLUMNS)
 
     df = backend_mappings_to_df(mappings)
 
-    # -------------------------
-    # Apply EPIC / PDMS filter
-    # -------------------------
     source_filter = st.session_state.get("source_filter", "Both")
 
     if source_filter == "EPIC":
