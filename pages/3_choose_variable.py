@@ -4,9 +4,7 @@ from streamlit_tree_select import tree_select
 from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from tree_utils import build_nodes_and_lookup
-from data_store import get_master_df
-from project_guard import require_project
-
+from data_store import get_master_df 
 
 if "project" not in st.session_state:
     st.switch_page("pages/1_overview.py")
