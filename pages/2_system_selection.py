@@ -1,16 +1,7 @@
-import traceback
 import streamlit as st
 
 from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
-from api_client import update_project_settings
-
-
-# -------------------------------------------------
-# CONFIG
-# -------------------------------------------------
-
-DEBUG = True  # 🔁 Turn off in production
 
 
 # -------------------------------------------------
@@ -60,6 +51,11 @@ st.caption(
     "You can change this later. All variables remain available in the background."
 )
 
+
+# -------------------------------------------------
+# RADIO SELECTION
+# -------------------------------------------------
+
 choice = st.radio(
     "Available source",
     options=["Both", "EPIC", "PDMS"],
@@ -68,49 +64,12 @@ choice = st.radio(
     ),
 )
 
+# -------------------------------------------------
+# 🔥 IMPORTANT: ONLY STORE LOCALLY
+# -------------------------------------------------
+
+# ⬇️ This replaces backend PATCH completely
 st.session_state["source_filter"] = choice
-
-
-# -------------------------------------------------
-# SAVE TO BACKEND
-# -------------------------------------------------
-
-def map_choice_to_source_systems(choice: str):
-    if choice == "Both":
-        return ["EPIC", "PDMS"]
-    if choice == "EPIC":
-        return ["EPIC"]
-    if choice == "PDMS":
-        return ["PDMS"]
-    return []
-
-payload = {
-    "source_systems": map_choice_to_source_systems(choice)
-}
-
-if DEBUG:
-    with st.expander("🔍 DEBUG – Outgoing request", expanded=False):
-        st.write("Project:", project)
-        st.write("Payload:", payload)
-
-try:
-    response = update_project_settings(project, payload)
-
-    if DEBUG:
-        with st.expander("🔍 DEBUG – Backend response", expanded=False):
-            st.write(response)
-
-except Exception as e:
-    st.error("❌ Failed to save selection")
-
-    if DEBUG:
-        with st.expander("🔥 DEBUG – Full error trace", expanded=True):
-            st.write("Project:", project)
-            st.write("Payload:", payload)
-            st.code(traceback.format_exc())
-
-    st.stop()
-
 
 
 # -------------------------------------------------
