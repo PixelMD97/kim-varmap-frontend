@@ -7,6 +7,8 @@ from api_client import update_project_settings
 import requests
 st.write(requests.get("https://2025varmapbackend-adgyb5eqghc6bzay.westeurope-01.azurewebsites.net/openapi.json").json())
 
+from api_client import _get
+st.write(_get("/whoami"))
 
 # -------------------------------------------------
 # Auth
