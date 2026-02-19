@@ -7,8 +7,10 @@ from auth_ui import render_auth_status
 from data_store import get_master_df
 from project_guard import require_project
 
+if "project" not in st.session_state:
+    st.switch_page("pages/1_overview.py")
+    st.stop()
 
-require_project()
 
 
 # -------------------------------------------------
