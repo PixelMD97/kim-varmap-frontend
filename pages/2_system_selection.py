@@ -75,10 +75,17 @@ st.session_state["source_filter"] = choice
 # SAVE TO BACKEND
 # -------------------------------------------------
 
+def map_choice_to_source_systems(choice: str):
+    if choice == "Both":
+        return ["EPIC", "PDMS"]
+    if choice == "EPIC":
+        return ["EPIC"]
+    if choice == "PDMS":
+        return ["PDMS"]
+    return []
+
 payload = {
-    "settings": {
-        "source_filter": choice
-    }
+    "source_systems": map_choice_to_source_systems(choice)
 }
 
 if DEBUG:
@@ -103,6 +110,7 @@ except Exception as e:
             st.code(traceback.format_exc())
 
     st.stop()
+
 
 
 # -------------------------------------------------
