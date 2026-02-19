@@ -1,3 +1,4 @@
+import traceback
 import streamlit as st
 
 from ui_stepper import render_stepper, render_bottom_nav
@@ -6,13 +7,23 @@ from api_client import update_project_settings
 
 
 # -------------------------------------------------
-# Auth
+# CONFIG
 # -------------------------------------------------
-render_auth_status()
+
+DEBUG = True  # 🔁 Turn off in production
+
 
 # -------------------------------------------------
-# Page setup
+# AUTH
 # -------------------------------------------------
+
+render_auth_status()
+
+
+# -------------------------------------------------
+# PAGE SETUP
+# -------------------------------------------------
+
 st.set_page_config(
     page_title="KIM VarMap – Data source system",
     page_icon="🧠",
@@ -22,19 +33,24 @@ st.set_page_config(
 
 render_stepper(current_step=1)
 
+
 # -------------------------------------------------
-# Require project
+# REQUIRE PROJECT
 # -------------------------------------------------
+
 if "project" not in st.session_state:
     st.switch_page("pages/1_overview.py")
     st.stop()
 
 project = st.session_state["project"]
 
+
 # -------------------------------------------------
 # UI
 # -------------------------------------------------
+
 st.title("Data source system")
+
 st.markdown(
     "Select which system(s) you want to extract variables from. "
     "This only affects visibility – data itself is not deleted."
@@ -52,18 +68,46 @@ choice = st.radio(
     ),
 )
 
-# -------------------------------------------------
-# Persist
-# -------------------------------------------------
 st.session_state["source_filter"] = choice
 
+
+# -------------------------------------------------
+# SAVE TO BACKEND
+# -------------------------------------------------
+
+payload = {
+    "settings": {
+        "source_filter": choice
+    }
+}
+
+if DEBUG:
+    with st.expander("🔍 DEBUG – Outgoing request", expanded=False):
+        st.write("Project:", project)
+        st.write("Payload:", payload)
+
 try:
-    update_project_settings(
-        project,
-        {"source_filter": choice},
-    )
+    response = update_project_settings(project, payload)
+
+    if DEBUG:
+        with st.expander("🔍 DEBUG – Backend response", expanded=False):
+            st.write(response)
+
 except Exception as e:
-    st.error(f"Failed to save selection: {e}")
+    st.error("❌ Failed to save selection")
+
+    if DEBUG:
+        with st.expander("🔥 DEBUG – Full error trace", expanded=True):
+            st.write("Project:", project)
+            st.write("Payload:", payload)
+            st.code(traceback.format_exc())
+
+    st.stop()
+
+
+# -------------------------------------------------
+# NAVIGATION
+# -------------------------------------------------
 
 st.markdown("---")
 render_bottom_nav(current_step=1)
