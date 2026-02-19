@@ -86,7 +86,8 @@ if project_mode == "Use existing project":
             st.session_state["project"] = project["name"]
 
             st.success(f"Project '{project['display_name']}' loaded.")
-            st.switch_page("pages/2_data_source.py")
+            st.switch_page("pages/2_system_selection.py")
+
 
         except Exception as e:
             st.error(f"Failed to load project: {e}")
@@ -182,7 +183,8 @@ if st.button("Start →", use_container_width=True):
         st.session_state["project"] = project["name"]
 
         st.success(f"Project '{project['display_name']}' created.")
-        st.switch_page("pages/2_data_source.py")
+        st.switch_page("pages/2_system_selection.py")
+
 
     except Exception as e:
         st.error(f"Failed to create project: {e}")
