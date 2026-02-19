@@ -6,7 +6,9 @@ from api_client import update_project_settings
 from project_guard import require_project
 
 
-require_project()
+if "project" not in st.session_state:
+    st.switch_page("pages/1_overview.py")
+    st.stop()
 
 
 # -------------------------------------------------
