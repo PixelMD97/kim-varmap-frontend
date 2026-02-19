@@ -4,14 +4,22 @@ from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from api_client import update_project_settings
 
-import requests
-st.write(requests.get("https://2025varmapbackend-adgyb5eqghc6bzay.westeurope-01.azurewebsites.net/openapi.json").json())
+# logging 
+import traceback
+st.code(traceback.format_exc())
 
-from api_client import _get
-st.write(_get("/whoami"))
+try:
+    payload = {"settings": {"source_filter": choice}}
 
-import streamlit as st
-st.write("Token:", st.session_state.get("access_token"))
+    st.write("DEBUG → Project:", project)
+    st.write("DEBUG → Payload:", payload)
+
+    update_project_settings(project, payload)
+
+except Exception as e:
+    st.error(f"Failed to save selection: {e}")
+
+
 
 # -------------------------------------------------
 # Auth
