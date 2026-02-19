@@ -67,9 +67,10 @@ if project_mode == "Use existing project":
         st.stop()
 
     project_lookup = {
-        f"{p['display_name']} ({p['name']})": p["name"]
-        for p in projects
-    }
+       f"{p.get('name')} {'(default)' if p.get('default') else ''}".strip(): p.get("name")
+       for p in projects
+   }
+
 
     selected_label = st.selectbox(
         "Select a project",
