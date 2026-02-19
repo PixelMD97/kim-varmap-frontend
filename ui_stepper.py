@@ -8,11 +8,12 @@ import streamlit as st
 
 _STEP_PAGES = {
     0: ("Overview", "pages/1_overview.py"),
-    1: ("Origin (EPIC/PDMS system)", "pages/2b_system_selection.py"),
+    1: ("Origin (EPIC/PDMS system)", "pages/2_system_selection.py"),
     2: ("Choose variables", "pages/3_choose_variable.py"),
     3: ("Granularity", "pages/3_b_granularity.py"),
     4: ("Export", "pages/4_export.py"),
 }
+
 
 _MAX_STEP = max(_STEP_PAGES.keys())
 
