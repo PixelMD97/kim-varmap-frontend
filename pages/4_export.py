@@ -8,7 +8,9 @@ from data_store import get_master_df, upsert_overlay_from_upload
 from project_guard import require_project
 
 
-require_project()
+if "project" not in st.session_state:
+    st.switch_page("pages/1_overview.py")
+    st.stop()
 
 
 # -------------------------------------------------
