@@ -110,13 +110,18 @@ def list_projects():
     return _get("/projects")
 
 
-def create_project(name, display_name=None, collaborators=None):
+def create_project(name, display_name=None, collaborators=None, from_project=None):
     payload = {
         "name": name,
         "display_name": display_name,
         "allowed_users": collaborators or [],
     }
+
+    if from_project:
+        payload["from_project"] = from_project
+
     return _post("/projects", payload)
+
 
 
 def get_project(name):
