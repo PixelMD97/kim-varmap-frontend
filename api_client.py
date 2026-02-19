@@ -3,6 +3,10 @@ import requests
 import streamlit as st
 
 
+# -------------------------------------------------
+# Base config
+# -------------------------------------------------
+
 def _base_url():
     return os.getenv(
         "KIM_API_BASE_URL",
@@ -40,29 +44,30 @@ def _patch(path, payload):
     return r.json() if r.content else None
 
 
-def _delete(path):
-    r = requests.delete(f"{_base_url()}{path}", headers=_headers())
-    r.raise_for_status()
-
-
 def _put(path, payload):
     r = requests.put(f"{_base_url()}{path}", json=payload, headers=_headers())
     r.raise_for_status()
     return r.json() if r.content else None
 
 
+def _delete(path):
+    r = requests.delete(f"{_base_url()}{path}", headers=_headers())
+    r.raise_for_status()
 
 
+# -------------------------------------------------
+# Projects
+# -------------------------------------------------
 
 def list_projects():
     return _get("/projects")
 
 
-def create_project(name, display_name, collaborators):
+def create_project(name, display_name=None, collaborators=None):
     payload = {
         "name": name,
         "display_name": display_name,
-        "allowed_users": collaborators,
+        "allowed_users": collaborators or [],
     }
     return _post("/projects", payload)
 
@@ -71,12 +76,21 @@ def get_project(name):
     return _get(f"/projects/{name}")
 
 
-def update_mapping(project, mapping_id, payload):
-    return _put(f"/projects/{project}/mappings/{mapping_id}", payload)
+def update_project_settings(project, settings: dict):
+    # IMPORTANT: correct backend route
+    return _patch(f"/projects/{project}/config", {"settings": settings})
 
 
-def list_mappings(project):
+# -------------------------------------------------
+# Mappings
+# -------------------------------------------------
+
+def fetch_base_mapping(project):
     return _get(f"/projects/{project}/mappings")
+
+
+def save_all_mappings(project, mappings):
+    return _put(f"/projects/{project}/mappings/batch", mappings)
 
 
 def create_mapping(project, payload):
@@ -84,19 +98,8 @@ def create_mapping(project, payload):
 
 
 def update_mapping(project, mapping_id, payload):
-    return _post(f"/projects/{project}/mappings/{mapping_id}", payload)
+    return _put(f"/projects/{project}/mappings/{mapping_id}", payload)
 
 
 def delete_mapping(project, mapping_id):
     _delete(f"/projects/{project}/mappings/{mapping_id}")
-
-
-def propose_mappings(project, mapping_ids):
-    return _post(
-        f"/projects/{project}/propose-mappings",
-        {"mapping_ids": mapping_ids},
-    )
-
-def save_all_mappings(project, mappings):
-    return _put(f"/projects/{project}/mappings/batch", mappings)
-
