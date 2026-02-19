@@ -4,22 +4,6 @@ from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from api_client import update_project_settings
 
-# logging 
-import traceback
-st.code(traceback.format_exc())
-
-try:
-    payload = {"settings": {"source_filter": choice}}
-
-    st.write("DEBUG → Project:", project)
-    st.write("DEBUG → Payload:", payload)
-
-    update_project_settings(project, payload)
-
-except Exception as e:
-    st.error(f"Failed to save selection: {e}")
-
-
 
 # -------------------------------------------------
 # Auth
