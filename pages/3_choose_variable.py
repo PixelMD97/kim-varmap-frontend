@@ -137,7 +137,11 @@ if source_filter != "Both" and "Source" in df_master.columns:
 # -------------------------------------------------
 # HARD safety: remove selections for hidden rows
 # -------------------------------------------------
-valid_row_keys = set(df_master["__row_key__"].astype(str))
+if "__row_key__" in df_master.columns:
+    valid_row_keys = set(df_master["__row_key__"].astype(str))
+else:
+    valid_row_keys = set()
+
 
 def _filter_checked(values):
     return [
