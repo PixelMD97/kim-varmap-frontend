@@ -73,7 +73,9 @@ def get_master_df() -> pd.DataFrame:
     mappings = load_project_mappings(project)
 
     if not mappings:
-        return pd.DataFrame(columns=EXPECTED_COLUMNS)
+        df = pd.DataFrame(columns=EXPECTED_COLUMNS + ["__row_key__"])
+        return df
+
 
     df = backend_mappings_to_df(mappings)
 
