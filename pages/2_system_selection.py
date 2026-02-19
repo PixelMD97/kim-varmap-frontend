@@ -4,6 +4,9 @@ from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
 from api_client import update_project_settings
 
+import requests
+st.write(requests.get("https://2025varmapbackend-adgyb5eqghc6bzay.westeurope-01.azurewebsites.net/openapi.json").json())
+
 
 # -------------------------------------------------
 # Auth
