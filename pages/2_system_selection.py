@@ -10,6 +10,9 @@ st.write(requests.get("https://2025varmapbackend-adgyb5eqghc6bzay.westeurope-01.
 from api_client import _get
 st.write(_get("/whoami"))
 
+import streamlit as st
+st.write("Token:", st.session_state.get("access_token"))
+
 # -------------------------------------------------
 # Auth
 # -------------------------------------------------
