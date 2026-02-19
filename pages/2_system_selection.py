@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-render_stepper(current_step=2)
+render_stepper(current_step=1)
 
 
 # -------------------------------------------------
