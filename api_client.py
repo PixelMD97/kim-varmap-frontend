@@ -123,9 +123,9 @@ def get_project(name):
     return _get(f"/projects/{name}")
 
 
-def update_project_settings(project, settings: dict):
-    # backend route: PATCH /projects/{project}/config
-    return _patch(f"/projects/{project}/config", {"settings": settings})
+def update_project_settings(project, payload: dict):
+    return _patch(f"/projects/{project}/config", payload)
+
 
 
 # -------------------------------------------------
