@@ -3,7 +3,6 @@ import streamlit as st
 from ui_stepper import render_stepper
 from auth_ui import render_auth_status
 from api_client import create_project, list_projects, get_project
- 
 
 
 # -------------------------------------------------
@@ -20,10 +19,6 @@ st.set_page_config(
 
 render_stepper(current_step=0)
 
-
-# -------------------------------------------------
-# Header
-# -------------------------------------------------
 st.title("KIM VarMap")
 st.caption(
     "A lightweight tool to browse, select, and export clinical variables "
@@ -48,8 +43,8 @@ st.session_state["project_mode"] = project_mode
 # -------------------------------------------------
 # Helpers
 # -------------------------------------------------
-def _parse_emails(raw: str) -> list[str]:
-    return [e.strip() for e in raw.split(",") if e.strip()]
+def _parse_usernames(raw: str) -> list[str]:
+    return [u.strip() for u in raw.split(",") if u.strip()]
 
 
 # -------------------------------------------------
@@ -67,10 +62,9 @@ if project_mode == "Use existing project":
         st.stop()
 
     project_lookup = {
-       f"{p.get('name')} {'(default)' if p.get('default') else ''}".strip(): p.get("name")
-       for p in projects
-   }
-
+        f"{p.get('name')} {'(default)' if p.get('default') else ''}".strip(): p.get("name")
+        for p in projects
+    }
 
     selected_label = st.selectbox(
         "Select a project",
@@ -84,11 +78,18 @@ if project_mode == "Use existing project":
     if st.button("Continue →", use_container_width=True):
         try:
             project = get_project(selected_project)
+
+            # ✅ Always set both project + project_meta
             st.session_state["project"] = project["name"]
 
-            st.success(f"Project '{project['display_name']}' loaded.")
-            st.switch_page("pages/2_system_selection.py")
+            st.session_state["project_meta"] = {
+                "project_name": project.get("display_name") or project["name"],
+                "owner_email": "",
+                "collaborators": project.get("allowed_users", []),
+            }
 
+            st.success(f"Project '{project.get('display_name') or project['name']}' loaded.")
+            st.switch_page("pages/2_system_selection.py")
 
         except Exception as e:
             st.error(f"Failed to load project: {e}")
@@ -97,7 +98,7 @@ if project_mode == "Use existing project":
 
 
 # -------------------------------------------------
-# NEW PROJECT PATH (your original logic)
+# NEW PROJECT PATH
 # -------------------------------------------------
 st.markdown("### Project information")
 
@@ -108,25 +109,17 @@ with left:
         "Project name",
         value=st.session_state.get("project_meta", {}).get("project_name", ""),
         key="project_name_input",
-        placeholder="e.g., TEST STUDY …",
-    )
-
-    owner_email_input = st.text_input(
-        "Your email",
-        value=st.session_state.get("project_meta", {}).get("owner_email", ""),
-        key="owner_email_input",
-        placeholder="firstname.lastname@insel.ch",
-        help="Primary contact person for this project",
+        placeholder="e.g., ICU_STUDY_2026",
     )
 
     collaborators_input = st.text_area(
-        "Additional collaborators (optional)",
+        "Additional collaborators (GitHub usernames)",
         value=", ".join(
             st.session_state.get("project_meta", {}).get("collaborators", [])
         ),
         key="collaborators_input",
-        placeholder="email1@insel.ch, email2@insel.ch",
-        help="Comma-separated list of collaborators invited to work on this project",
+        placeholder="username1, username2",
+        help="Comma-separated list of GitHub usernames allowed to edit this project",
     )
 
 with right:
@@ -138,17 +131,15 @@ with right:
             unsafe_allow_html=True,
         )
 
-
 if project_name_input.strip():
     st.session_state["project_meta"] = {
         "project_name": project_name_input.strip(),
-        "owner_email": owner_email_input.strip(),
-        "collaborators": _parse_emails(collaborators_input),
+        "collaborators": _parse_usernames(collaborators_input),
     }
 
 
 # -------------------------------------------------
-# Informational text (unchanged)
+# Informational text
 # -------------------------------------------------
 st.markdown("### How it works")
 st.markdown(
@@ -165,7 +156,7 @@ st.markdown("---")
 
 
 # -------------------------------------------------
-# START → create new project
+# CREATE NEW PROJECT
 # -------------------------------------------------
 if st.button("Start →", use_container_width=True):
     meta = st.session_state.get("project_meta")
@@ -179,15 +170,18 @@ if st.button("Start →", use_container_width=True):
             name=meta["project_name"],
             display_name=meta["project_name"],
             collaborators=meta.get("collaborators", []),
-            from_project="default",   # 👈 THIS COPIES ALL DEFAULT MAPPINGS
+            from_project="default",  # copy default mappings
         )
-
 
         st.session_state["project"] = project["name"]
 
-        st.success(f"Project '{project['display_name']}' created.")
-        st.switch_page("pages/2_system_selection.py")
+        st.session_state["project_meta"] = {
+            "project_name": project.get("display_name") or project["name"],
+            "collaborators": project.get("allowed_users", []),
+        }
 
+        st.success(f"Project '{project.get('display_name') or project['name']}' created.")
+        st.switch_page("pages/2_system_selection.py")
 
     except Exception as e:
         st.error(f"Failed to create project: {e}")
