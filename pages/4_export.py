@@ -4,7 +4,8 @@ from datetime import datetime
 
 from ui_stepper import render_stepper, render_bottom_nav
 from auth_ui import render_auth_status
-from data_store import get_master_df, upsert_overlay_from_upload 
+from data_store import get_master_df
+from api_client import create_mapping
 
 
 if "project" not in st.session_state:
@@ -24,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-render_stepper(current_step=5)
+render_stepper(current_step=4)
 
 
 # -------------------------------------------------
@@ -59,7 +60,7 @@ granularity_rows = st.session_state.get("granularity_rows", [])
 
 if not granularity_rows:
     st.info("No variables selected yet. Go back to **Choose variables**.")
-    render_bottom_nav(current_step=5)
+    render_bottom_nav(current_step=4)
     st.stop()
 
 gran_df = pd.DataFrame(granularity_rows)
@@ -82,13 +83,6 @@ export_df = gran_df.merge(
 # -------------------------------------------------
 export_df["Origin"] = "Base"
 
-if "user_created" in export_df.columns:
-    export_df.loc[export_df["user_created"] == True, "Origin"] = "User created"
-
-if "user_uploaded_at" in export_df.columns:
-    export_df.loc[export_df["user_uploaded_at"].notna(), "Origin"] = "User upload"
-
-
 def infer_source(row):
     epic = str(row.get("EPIC ID", "")).strip()
     pdms = str(row.get("PDMS ID", "")).strip()
@@ -100,7 +94,6 @@ def infer_source(row):
     if pdms:
         return "PDMS"
     return ""
-
 
 export_df["Source"] = export_df.apply(infer_source, axis=1)
 
@@ -121,7 +114,6 @@ DISPLAY_COLUMNS = [
     "Time basis",
 ]
 
-# Defensive: ensure all columns exist
 for col in DISPLAY_COLUMNS:
     if col not in export_df.columns:
         export_df[col] = ""
@@ -182,7 +174,7 @@ st.download_button(
 
 
 # -------------------------------------------------
-# Add variable (contribution flow)
+# Add variable (backend-driven)
 # -------------------------------------------------
 st.markdown("---")
 st.subheader("Add a variable")
@@ -208,30 +200,6 @@ with st.form("add_variable_form", clear_on_submit=True):
     submitted = st.form_submit_button("Add variable")
 
 
-st.markdown(
-    """
-<div style="color: rgba(49,51,63,0.65); font-size: 0.9rem;">
-You can add new variables to help this project grow organically.<br><br>
-
-• Provide a <b>clear variable name</b><br>
-• Define at least <b>one identifier</b> (EPIC ID or PDMS ID)<br>
-• Make an <b>educated guess</b> for organ system and group<br><br>
-
-If your entry matches our standard mapping, it will automatically appear
-in the correct category. Otherwise, it will be listed alphabetically
-under your specified group.<br><br>
-
-For questions or batch uploads, please contact:<br>
-<b>xxx@insel.ch</b>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-
-# -------------------------------------------------
-# Handle submit
-# -------------------------------------------------
 if submitted:
     if not variable.strip():
         st.error("Variable name is required.")
@@ -243,30 +211,43 @@ if submitted:
 
     unit_clean = unit_other.strip() if unit_choice == "Other" else unit_choice
 
-    new_row = {
-        "Variable": variable.strip(),
-        "Organ System": organ_system.strip() or "General",
-        "Group": group.strip() or "General",
-        "EPIC ID": epic_id.strip(),
-        "PDMS ID": pdms_id.strip(),
-        "Unit": unit_clean,
+    payload = {
+        "name": variable.strip(),
+        "source": [],
+        "status": "active",
+        "unit": unit_clean,
+        "classification": {
+            "path": [
+                organ_system.strip() or "General",
+                group.strip() or "General",
+            ]
+        }
     }
 
-    upload_df = pd.DataFrame([new_row])
-    added, updated, skipped, processed_df = upsert_overlay_from_upload(upload_df)
+    if epic_id.strip():
+        payload["source"].append({
+            "system": "EPIC",
+            "variable": epic_id.strip()
+        })
 
-    if processed_df is not None and "__row_key__" in processed_df.columns:
-        for rk in processed_df["__row_key__"]:
-            st.session_state["granularity_rows"].append({
-                "row_id": rk,
-                "row_key": rk,
-                "Summary": "Raw",
-                "Time basis": "None",
-            })
+    if pdms_id.strip():
+        payload["source"].append({
+            "system": "PDMS",
+            "variable": pdms_id.strip()
+        })
 
-    st.success("Variable added.")
-    st.rerun()
+    try:
+        create_mapping(project, payload)
+
+        # Clear Streamlit cache so new mapping appears
+        st.cache_data.clear()
+
+        st.success("Variable added successfully.")
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Failed to create mapping: {e}")
 
 
 st.markdown("---")
-render_stepper(current_step=4)
+render_bottom_nav(current_step=4)
