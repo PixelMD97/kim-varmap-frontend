@@ -170,7 +170,7 @@ if st.button("Start →", use_container_width=True):
             name=meta["project_name"],
             display_name=meta["project_name"],
             collaborators=meta.get("collaborators", []),
-            from_project="default",  # copy default mappings
+#            from_project="default",  # copy default mappings
         )
 
         st.session_state["project"] = project["name"]
